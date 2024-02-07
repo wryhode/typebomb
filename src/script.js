@@ -9,6 +9,7 @@ const gameMessage = document.getElementById("gameMessage");
 const lettersDiv = document.getElementById("letters");
 const timeoutDuration = document.getElementById("timeoutDuration");
 const dyslexiaButton = document.getElementById("dyslexiaButton");
+const settingsDiv = document.getElementById("settingsMenu");
 const resetHighscoreButton = document.getElementById("resetHighscoreButton");
 const renameButton = document.getElementById("renameButton");
 const scoreCounter = document.getElementById("scoreCounter");
@@ -25,7 +26,7 @@ let isNotifying = false;                    // Is the notification menu active?
 let isGameMessageActive = false;            // Is the game message notifier active?
 let takeGameInput = false;                  // Whether or not to evaluate 
 let loseTimeoutID = null                    // Last timeout ID to stop it to not gameover immediately
-let score = null;                              // Self explanatory
+let score = null;                           // Self explanatory
 let highScore = 0;                          // this is the LOCAL highscore
 let timeOutTime = 5000;                     // Doesn't set anything, the time in ms of the gameover timeout
 let dyslexiaMode = false;                   // A joke mode suggested by my dyslexic friend as a challenge
@@ -298,11 +299,13 @@ function selectRandomChar()
 }
 
 // Gee i wonder what this does
+// bool show controls if menu elements are visible or hidden
 function showMenuElements(show)
 {
     let displayStyle = boolToDisplayStyle(show);
     scoreMenu.style.display = displayStyle;
     leaderboard.style.display = displayStyle;
+    settingsDiv.style.display = displayStyle;
     notificationBox.style.display = boolToDisplayStyle(show * isNotifying);
     gameMessageDiv.style.display = boolToDisplayStyle(show * isGameMessageActive);
 }
@@ -375,4 +378,11 @@ resetHighscoreButton.onclick = resetHighscore;
 showMenuElements(false);
 titleDiv.style.display = "unset";
 titleDiv.onanimationend = init;
-titleDiv.focus();
+
+// Name the tab if hosted locally to differentiate in developement
+if(window.location.href.startsWith("file://"))
+{
+    document.title = "typebomb (local)";
+}
+
+titleDiv.focus(); // An attempt at mobile support, should open the virtual keyboard
