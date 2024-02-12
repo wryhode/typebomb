@@ -1,6 +1,10 @@
 # typebomb
-typing and reaction time game
+*a minimalistic typing and reaction time game*
 
 ## features
 - online leaderboards (through GameJolt)
-- 
+- ...
+
+## changelog
+### 0.35
+- Added a cooldown before allowing to restart the game again to avoid confusion
