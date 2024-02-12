@@ -35,6 +35,7 @@ let dyslexiaMode = false;                   // A joke mode suggested by my dysle
 let playerName = "Guest";                   // Default player name in case they've never played before
 let hasPlayed = false;                      // Has the game been started at least once?
 let canRestart = true;                      // If the user can restart the game, theres a little delay when the game ends to not be confusing
+let hasChosenChar = false;                  // Has the game actually started (char blinking?)
 
 // A class to simplify symbol handling
 class Symbol
@@ -76,7 +77,7 @@ function handleKeyPress(event)
 
     if(takeGameInput)
     {
-        if(charset.includes(gameKey))
+        if(hasChosenChar && charset.includes(gameKey))
         {
             if(gameKey == activeSymbol.symbol)
             {
@@ -255,6 +256,7 @@ function loadFromLocalStorage()
 // Called once the game starts or the user types the correct key
 function setupGameChars(nChars)
 {
+    hasChosenChar = false;
     clearTimeout(loseTimeoutID);
 
     if(dyslexiaMode)
@@ -274,18 +276,16 @@ function setupGameChars(nChars)
     let charList = pickRandomCharMulti(nChars);
 
     createSymbols(nChars, charList);  
-
-    selectRandomChar();
-
+    
     charItersWithoutRefresh ++;
     if(charItersWithoutRefresh >= 2 - dyslexiaMode)
     {
         resetAvailableChars();
         charItersWithoutRefresh = 0;
     }
-
+    
     timeOutTime = 5000 / ((score/10) + 1);
-    loseTimeoutID = setTimeout(misTyped, timeOutTime);
+    setTimeout(selectRandomChar, 250 + Math.random() * 1000);
 }
 
 // Activates the joke mode
@@ -308,7 +308,11 @@ function selectRandomChar()
     let whichChar = Math.floor(Math.random() * symbols.length);
     activeSymbol = symbols[whichChar];
     
+    hasChosenChar = true;
     activeSymbol.setAnimation(true);
+
+    // Actually starts the losing timer
+    loseTimeoutID = setTimeout(misTyped, timeOutTime);
 }
 
 // Gee i wonder what this does
