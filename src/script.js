@@ -15,10 +15,12 @@ const renameButton = document.getElementById("renameButton");
 const scoreCounter = document.getElementById("scoreCounter");
 const highscoreCounter = document.getElementById("highscoreCounter");
 const leaderboardList = document.getElementById("leaderboardList");
+const gameNotifier = document.getElementById("gameNotifier");
+const hasRestarted = document.getElementById("hasRestarted");
 
 // Game variables
 const charset = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']; // The characters that are allowed to appear in game
-let availableCharset = charset.slice(0);    // To mitigate duplicates, pick items from this array and remove it. (Copies but does not link them)
+let availableCharset = charset.slice(0);    // To mitigate duplicate characters, pick items from this array and remove it. (Copies but does not link them)
 let charItersWithoutRefresh = 0;            // How many character pulls have occured without resetting availableCharset
 let symbols = new Array();                  // Array of Symbol objects
 let activeSymbol = null;                    // Points to the active symbol
@@ -31,6 +33,8 @@ let highScore = 0;                          // this is the LOCAL highscore
 let timeOutTime = 5000;                     // Doesn't set anything, the time in ms of the gameover timeout
 let dyslexiaMode = false;                   // A joke mode suggested by my dyslexic friend as a challenge
 let playerName = "Guest";                   // Default player name in case they've never played before
+let hasPlayed = false;                      // Has the game been started at least once?
+let canRestart = true;                      // If the user can restart the game, theres a little delay when the game ends to not be confusing
 
 // A class to simplify symbol handling
 class Symbol
@@ -87,19 +91,27 @@ function handleKeyPress(event)
     }
     else
     {
-        if(charset.includes(gameKey) && !specials)
+        if(canRestart && charset.includes(gameKey) && !specials)
         {
             startGame();
         }
     }
 }
 
+function resetCanRestart()
+{
+    canRestart = true;
+    gameNotifier.style.visibility = "visible";
+    startGameBlink();
+}
+
 // Gets called if the user mistypes or the timer runs out. Initiates gameover state and returns to the menus
 function misTyped()
 {
+    canRestart = false;
     takeGameInput = false;
     activeSymbol.setAnimation(false);
-    lettersDiv.style.display = "none";
+    lettersDiv.style.visibility = "hidden";
     scoreCounter.innerHTML = score;
     highscoreCounter.innerHTML = highScore;
     if(score > highScore)
@@ -111,6 +123,7 @@ function misTyped()
     saveToLocalStorage();
     GJAPI.ScoreFetch(885603, GJAPI.SCORE_ALL, 10, updateScoreboard);
     displayGameMessage("Game over!");
+    setTimeout(resetCanRestart, 1000);
     startMenu();
 }
 
@@ -161,7 +174,7 @@ function pickRandomCharMulti(nChars)
 function hideNotification()
 {
     isNotifying = false;
-    notificationBox.style.display = boolToDisplayStyle(isNotifying);
+    notificationBox.style.visibility = boolToDisplayStyle(isNotifying);
 }
 
 // Yup,, you guessed it
@@ -175,7 +188,7 @@ function displayNotification(title, message)
     notificationBox.appendChild(titleElement);
     notificationBox.appendChild(contentElement);
     isNotifying = true;
-    notificationBox.style.display = boolToDisplayStyle(isNotifying);
+    notificationBox.style.visibility = boolToDisplayStyle(isNotifying);
     notificationBox.addEventListener("animationend", hideNotification)
 }
 
@@ -183,7 +196,7 @@ function displayNotification(title, message)
 function hideGameMessage()
 {
     isGameMessageActive = false;
-    gameMessageDiv.style.display = boolToDisplayStyle(false);
+    gameMessageDiv.style.display = "none";
 }
 
 // This too
@@ -191,7 +204,7 @@ function displayGameMessage(message, fadeTime = 5000)
 {
     gameMessage.innerHTML = message;
     isGameMessageActive = true;
-    gameMessageDiv.style.display = boolToDisplayStyle(isGameMessageActive);
+    gameMessageDiv.style.display = "unset";
     gameMessageDiv.addEventListener("animationend", hideGameMessage);
 }
 
@@ -217,11 +230,11 @@ function boolToDisplayStyle(show)
 {
     if(show)
     {
-        return "unset";
+        return "visible";
     }
     else
     {
-        return "none";
+        return "hidden";
     }
 }
 
@@ -271,7 +284,7 @@ function setupGameChars(nChars)
         charItersWithoutRefresh = 0;
     }
 
-    timeOutTime = 5000 / ((score/25) + 1);
+    timeOutTime = 5000 / ((score/10) + 1);
     loseTimeoutID = setTimeout(misTyped, timeOutTime);
 }
 
@@ -303,11 +316,15 @@ function selectRandomChar()
 function showMenuElements(show)
 {
     let displayStyle = boolToDisplayStyle(show);
-    scoreMenu.style.display = displayStyle;
-    leaderboard.style.display = displayStyle;
-    settingsDiv.style.display = displayStyle;
-    notificationBox.style.display = boolToDisplayStyle(show * isNotifying);
-    gameMessageDiv.style.display = boolToDisplayStyle(show * isGameMessageActive);
+    scoreMenu.style.visibility = displayStyle;
+    leaderboard.style.visibility = displayStyle;
+    settingsDiv.style.visibility = displayStyle;
+    notificationBox.style.visibility = boolToDisplayStyle(show * isNotifying);
+    gameMessageDiv.style.visibility = boolToDisplayStyle(show * isGameMessageActive);
+    if(!show)
+    {
+        gameNotifier.style.visibility = "hidden";
+    }
 }
 
 // Rename the player and store in localstorage
@@ -320,6 +337,23 @@ function rename()
         saveToLocalStorage();
         displayNotification("Info", `Changed name to: ${playerName}`);
     }
+}
+
+// Starts the "attract mode" blinking thingamabob 
+function startGameBlink()
+{
+    gameNotifier.classList.add("blinking");
+}
+
+// Stops the attract mode
+function stopGameBlink()
+{
+    gameNotifier.classList.remove("blinking");
+}
+
+function updateAfterPlayed()
+{
+    hasRestarted.innerHTML = "re";
 }
 
 // TW: Resetting values of a certain high score
@@ -346,16 +380,20 @@ function startMenu()
     }
     takeGameInput = false;
     showMenuElements(true);
-    displayNotification("Tips", "You can restart immediately after a game over by pressing a key");
+    //displayNotification("Tips", "You can restart immediately after a game over by pressing a key");
 }
 
 // Can you believe it guys?? startGame() function in a game??? Woohoo! I am so happy about this information
 function startGame()
 {
     score = 0;
+    stopGameBlink();
     setupGameChars(5);
     showMenuElements(false);
-    lettersDiv.style.display = "flex";
+    updateAfterPlayed()
+    hideGameMessage();
+    lettersDiv.style.visibility = "visible";
+    hasPlayed = true;
     takeGameInput = true;
 }
 
@@ -363,9 +401,10 @@ function startGame()
 function init()
 {
     GJAPI.ScoreFetch(885603, GJAPI.SCORE_ALL, 10, updateScoreboard);
-    titleDiv.style.display = "none";
+    titleDiv.style.visibility = "hidden";
     scoreCounter.innerHTML = score;
     highscoreCounter.innerHTML = highScore;
+    gameNotifier.style.visibility = "visible";
     startMenu();
 }
 
@@ -376,7 +415,8 @@ dyslexiaButton.onclick = toggleDyslexiaMode;
 renameButton.onclick = rename;
 resetHighscoreButton.onclick = resetHighscore;
 showMenuElements(false);
-titleDiv.style.display = "unset";
+gameNotifier.style.visibility = "hidden";
+titleDiv.style.visibility = "visible";
 titleDiv.onanimationend = init;
 
 // Name the tab if hosted locally to differentiate in developement

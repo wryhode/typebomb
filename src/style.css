@@ -50,6 +50,12 @@ button
     to {opacity: 1;}
 }
 
+@keyframes gameStartBlink {
+    0% {opacity: 0;}
+    50% {opacity: 1;}
+    100% {opacity: 0;}
+}
+
 #mainContent
 {
     height: 100%;
@@ -85,6 +91,24 @@ button
 #title
 {
     font-size: 10rem;
+}
+
+#gameStartNotifier
+{
+    position: absolute;
+    left: 50%;
+    top: 35%;
+    transform: translate(-50%, -50%);
+}
+
+#gameNotifier
+{
+    font-size: 2rem;
+}
+
+.blinking
+{
+    animation: gameStartBlink 2500ms ease-in-out infinite;
 }
 
 #gameMessageDiv
